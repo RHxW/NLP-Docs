@@ -187,3 +187,94 @@ $$
 换言之，有时候用更少的上下文是有好处的，可以帮助提升泛化效果。n-gram中的这种“分级”现象的利用方式有两种。在**backoff**方法中，当trigram的证据足够多的时候使用trigram，否则用bigram，或者更少的时候用unigram，也就是说只会在高级gram的证据不足的时候会向低级gram回退。另一个方法是**interpolation**，始终将不同gram的估计概率进行混合，采用trigram，bigram和unigram的加权和
 
 ### 3.6 Kneser-Ney Smoothing
+
+TODO
+
+
+## 4 Naive Bayes and Sentiment Classification（朴素贝叶斯和情感分类）
+朴素贝叶斯算法用于文本分类，本章关注文本分类中的一个任务-情感分析，即提取文本中作者表达出的正面和负面的情感。
+
+情感分析最简单的形式是一个二分类任务，评论中的词会提供很有用的线索，例如*great,richly,awesome,pathetic,awful,ridiculously*等是判断情感的很好的线索。
+
+**Spam detection** 垃圾邮件检测是另一个重要的商业应用，二分类任务将email分为垃圾邮件和正常邮件。
+
+其他应用例如判断文字中包含的语言、判断文字作者等也很重要。而最古老的应用要数对文本进行topic分类，比如判断论文类别等。
+
+### 4.1 Naive Bayes Classifiers
+为什么称为‘朴素’呢？因为它对特征间关系作出的假设非常简单。
+
+将一个文档(document)表示为一个bag-of-words，即忽略位置关系的词的集合，只记录每个词出现的频数。
+
+朴素贝叶斯是一个概率分类器，意味着对于一个文档d，在所有类别$c\in C$中，分类器会返回根据文档d有最大后验概率的类别$\hat{c}$:
+$$
+\hat{c}=\argmax_{c\in C}P(c|d)
+$$
+
+贝叶斯分类的思想是利用贝叶斯法则将上式转换成更有用的形式。贝叶斯法则如下：
+$$
+P(x|y)=\frac{P(y|x)P(x)}{P(y)}
+$$
+因此有：
+$$
+\hat{c}=\argmax_{c\in C}P(c|d)=\argmax_{c\in C}\frac{P(d|c)P(c)}{P(d)}
+$$
+我们可以忽略上式中的P(d)因为它对于每个类别都是相同的（因为关注的是同一个文档d）。因此目标可以简化为：
+$$
+\hat{c}=\argmax_{c\in C}P(c|d)=\argmax_{c\in C}P(d|c)P(c)
+$$
+我们称朴素贝叶斯模型是一个生成模型，因为可以把上式看作文档生成的隐含假设：首先从P(c)采样一个类别，然后根据P(d|c)生成词。
+
+要得到分类结果，将先验概率P(c)和文档d的似然P(d|c)相乘并选取结果最大者:
+$$
+\hat{c}=\argmax_{c\in C}\overbrace{P(d|c)}^{\text{likelihood}} \ \overbrace{P(c)}^{\text{prior}}
+$$
+不考虑泛化loss的情况下，可以将一个文档d表示称一组特征$f_1,f_2,...,f_n$:
+$$
+\hat{c}=\argmax_{c\in C}\overbrace{P(f_1,f_2,...,f_n|c)}^{\text{likelihood}} \ \overbrace{P(c)}^{\text{prior}}
+$$
+但是上式这个形式计算起来太困难：要计算每种特征组合的可能所需的参数太多、计算量太大而且也没有那么大的训练集。因此朴素贝叶斯分类器作出了两个简单假设：
+1. 'bag of words'假设：假设词的位置无关紧要
+2. 朴素贝叶斯假设：条件独立假设，概率$P(f_i|c)$在给定类别c的时候是独立的，因此有：
+   $$
+   P(f_1,f_2,...,f_n|c)=P(f_1|c)\cdot P(f_2|c)\cdot ... \cdot P(f_n|c)
+   $$
+
+因此在这样的假设下，朴素贝叶斯分类器最终类别预测结果为：
+$$
+c_{NB}=\argmax_{c\in C}P(c)\prod_{f\in F}P(f|c)
+$$
+要在文本上使用贝叶斯分类器需要文本中word的位置信息，保持测试文档中每个词的位置下标即可：
+$$
+c_{NB}=\argmax_{c\in C}P(c)\prod_{i\in positions}P(w_i|c)
+$$
+朴素贝叶斯也是在对数空间进行计算，因此上式可以表示为：
+$$
+c_{NB}=\argmax_{c\in C}\log P(c)+\sum_{i\in positions}\log P(w_i|c)
+$$
+如上式所示，在对数空间中这个分类器根据特征的计算实际上是一个线性模型。分类器利用输入特征的线性组合做出分类决策，这种类型的分类器（如朴素贝叶斯以及逻辑回归）就称为线性分类器。
+
+### 4.2 Training the Naive Bayes Classifier
+那么如何计算$P(c)$和$P(f_i|c)$?首先考虑最大似然估计。如果只利用数据中的频数信息，对于类别先验概率P(c)，可以通过训练集中文档包含c类的数量计算，令$N_c$代表训练集中包含c的文档数量，$N_{doc}$代表文档总数，因此有：
+$$
+\hat{P}(c)=\frac{N_c}{N_{doc}}
+$$
+要得到概率$P(f_i|c)$，则假设特征即是一个word在文档的bag of words中存在，因此可以使用$P(w_i|c)$，也就是计算$w_i$在所有c类别相关文档中出现的次数和所有词的比值。首先将所有包含类别c的文档拼接成一个大的c文档文本，然后用其中$w_i$的频数来做最大似然估计：
+$$
+\hat{P}(w_i|c)=\frac{count(w_i,c)}{\sum_{w\in V}count(w,c)}
+$$
+其中vocabulary V包含全部类别的所有word类型（不仅是c类的words）
+
+这里其实有一个问题，假设我们要估计"fantastic"在给定positive的似然，但是训练集里二者不存在关联关系，也许训练集里它和negative关联在一起。这种情况下概率的计算结果会是0:
+$$
+\hat{P}(\text{"fantastic"}|\text{positive})=\frac{count(\text{"fantastic"},\text{positive})}{\sum_{w\in V}count(w,\text{positive})}=0
+$$
+但是因为朴素贝叶斯会把全部特征的似然相乘（因为它很朴素……），所以0会导致结果为0
+
+最简单的解决方案是Laplace smoothing/Add-one smoothing.虽然在语言模型中一般用更高级的平滑方法，但是朴素贝叶斯一般用这种方法：
+$$
+\hat{P}(w_i|c)=\frac{count(w_i,c)+1}{\sum_{w\in V}(count(w,c)+1)}=\frac{count(w_i,c)+1}{(\sum_{w\in V}count(w,c))+|V|}
+$$
+遇到没见过的词怎么办？直接忽略，去掉就好
+
+有的时候还会忽略一些stop words比如a，the这种词。如何获取stop words的列表呢？一种方法是统计频率然后将前多少位的词设定为stop words，另一种方法就是下载现成的stop words list.
+但是一般忽略stop words并不能提升性能，所以通常不会使用stop words list
