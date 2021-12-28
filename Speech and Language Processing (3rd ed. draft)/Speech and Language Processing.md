@@ -156,3 +156,34 @@ $$
 n-gram模型能够提供的信息越多，它的perplexity越低
 
 ### 3.3 Sampling sentences from a language model
+
+### 3.4 Generalization and Zeros
+n-gram模型和很多统计模型一样依赖于训练数据。一方面，训练集中存在的先验会影响n-gram模型，另一方面可以通过增加训练集中样本数量N的方式提升n-gram模型的性能。
+#### 3.4.1 Unknown Words
+将系统没见过的(unknown)词称为OOV(out of vocabulary)词。
+
+### 3.5 Smoothing
+测试集和训练集的上下文不同就需要平滑操作（某个词在测试集中的上下文在训练集中没有出现过）
+
+#### 3.5.1 Laplace Smoothing
+最简单的方法是在归一化前给每个n-gram类别加1，这种方法称为拉普拉斯平滑。
+对于unigram模型，每个词的概率为：
+$$
+p(w_i)=\frac{c_i}{N}
+$$
+Laplace smoothing对每个count仅加1，因此也称add-one smoothing. 因为vocabulary里面有V个词，而且每个都是递增的，因此考虑到额外的observations，分母也要加上V：
+$$
+P_{Laplace}(w_i)=\frac{c_i+1}{N+V}
+$$
+
+#### 3.5.2 Add-k smoothing
+$$
+P_{Add-k}^*(w_n|w_{n-1})=\frac{C(w_{n-1}w_n)+k}{C(w_{n-1})+kV}
+$$
+
+#### 3.5.3 Backoff and Interpolation
+以上讨论的方法可以解决n-gram中出现的0 count/频率的问题。然而还存在额外的信息可供利用。如果想要计算$P(w_n|w_{n-2}w_{n-1})$但是没有$w_{n-2}w_{n-1}w_n$这样的trigram，这个时候可以用bigram概率$P(w_n|w_{n-1})$来估计。同样也可以用unigram来估计bigram
+
+换言之，有时候用更少的上下文是有好处的，可以帮助提升泛化效果。n-gram中的这种“分级”现象的利用方式有两种。在**backoff**方法中，当trigram的证据足够多的时候使用trigram，否则用bigram，或者更少的时候用unigram，也就是说只会在高级gram的证据不足的时候会向低级gram回退。另一个方法是**interpolation**，始终将不同gram的估计概率进行混合，采用trigram，bigram和unigram的加权和
+
+### 3.6 Kneser-Ney Smoothing
