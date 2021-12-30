@@ -278,3 +278,94 @@ $$
 
 有的时候还会忽略一些stop words比如a，the这种词。如何获取stop words的列表呢？一种方法是统计频率然后将前多少位的词设定为stop words，另一种方法就是下载现成的stop words list.
 但是一般忽略stop words并不能提升性能，所以通常不会使用stop words list
+
+### 4.3 Worked example
+
+### 4.4 Optimizing for Sentiment Analysis
+情感分析和其他类似的文本分类任务的优化方法：
+1. 在这类任务中，一个word是否出现要比它在文本中出现的频率对结果的影响更大，因此通常将word的count设置为0和1来提升性能，这种方法称为二项朴素贝叶斯(binary multinomial naive Bayes, binary NB)
+2. 情感分类中的否定词通常对结果的影响更大，例如'I really like this movie'和'I didn't like this movie'这两句话，尽管都含有like，但是第二句的didn't完全否定了like；类似的还有双重否定表示肯定。常见的办法是在文本正则化阶段将否定词后到下一个标点符号间的所有词都加上一个前缀，例如'NOT_'，从而帮助对否定词的识别。
+3. 训练集不足，考虑使用公开标准数据集
+
+### 4.5 Naive Bayes for other text classification tasks
+
+### 4.6 Naive Bayes as a Language Model
+
+
+## 5 Logistic Regression
+logistic regression是一种很适合对特征或线索与特定结果间关系进行挖掘的算法。
+
+logistic regression广泛应用于各个领域的分析工具中，它与神经网络关系很密切，实际上一个神经网络可以视作多个logistic regression分类器的组合。
+
+**Generative and Discriminative Classifiers:** 朴素贝叶斯和logistic regression间最大的区别在于logistic regression是一个判别式分类器，而朴素贝叶斯是一个生成式分类器。
+
+判别式和生成式框架的机器学习模型间的差异非常大；
+考虑对于图片的猫狗分类任务，生成式模型的目标是理解猫和狗各自长什么样，因此可以让模型生成一个狗或者猫。对于测试图片，这样的模型会考虑狗的模型更符合还是猫的模型更符合，然后得到结果标签。
+
+而判别模型则只会学习分辨二者之间的差别。所以也许训练集中所有狗的图片都戴着项圈而猫都不戴，则测试的时候模型会关注有没有戴项圈这个特征用来判断。
+
+前面提到朴素贝叶斯算法将文档d分为c类的方法并不直接计算$P(c|d)$,而是计算一个likelihood和一个prior
+$$
+\hat{c}=\argmax_{c\in C}\overbrace{P(d|c)}^{\text{likelihood}} \ \overbrace{P(c)}^{\text{prior}}
+$$
+如朴素贝叶斯的生成模型会利用这个likelihood项，它表示了如果我们已知一个文档属于类别c，那么该如何生成这个文档的特征。
+
+而判别模型则会直接计算$P(c|d)$，也许会学习到对能直接提升性能的特征加大权重的简单方式。
+
+**Components of a probabilistic machine learning classifier:** 和朴素贝叶斯类似，logistic regression也是一种有监督机器学习的概率分类器。
+
+### 5.1 Classification: the sigmoid
+用于将模型输出映射到0-1之间
+$$
+\sigma(z)=\frac{1}{1+e^{-z}}
+$$
+sigmoid函数有这样的性质：
+$$
+1-\sigma(x)=\sigma(-x)
+$$
+
+### 5.2 Learning in Logistic Regression
+
+### 5.3 The cross-entropy loss function
+二元交叉熵：
+$$
+L_{CE}(\hat{y},y)=-\log p(y|x)=-[y\log \hat{y}+(1-y)\log (1-\hat{y})]
+$$
+更一般形式：
+$$
+L_{CE}(\hat{y},y)=-\sum_iy_i\log \hat{y}_i
+$$
+
+### 5.4 Gradient Descent
+
+### 5.5 Regularization
+为了避免过拟合现象的出现，需要在目标函数中加入正则化项。
+
+## 6 Vector Semantics and Embeddings
+vector semantics是语言含义的表示，称为embeddings
+
+### 6.1 Lexical Semantics
+我们应该如何去表示一个词的含义呢？如果用之前提到的方法比如n-gram以及一些经典的nlp应用中，一个词的表示仅仅是一串字母或者一个vocabulary list的下标。
+
+很显然这并不能满足我们的想法，因为我们希望一个语言含义模型能够做各种各样的事。它应该能够告诉我们哪些词是近义词，哪些是反义词，哪些有积极含义，哪些有消极含义。它应该能够区分一个场景中的不同视角，例如支付场景下的买、卖和付款。
+
+### 6.2 Vector Semantics
+核心思想是将一个word映射到一个高维的语义空间，words在语义空间中的表示向量成为embeddings
+
+本章会介绍两个最常用的模型：tf-idf和word2vec；tf-idf仅根据临近words的数量来定义一个word的含义，得到的向量很稀疏。word2vec则会得到较为紧密的特征。
+
+### 6.3 Words and Vectors
+word含义的向量或分布模型一般基于共生矩阵(co-occurrence matrix)，它是一种表示word间共同出现(co-occur)关系的方法。一般有两种，term-document matrix 和 term-term matrix.
+
+#### 6.3.1 Vectors and documents
+term-document matrix里每一行代表vocabulary中的一个word，每一列代表某个文档集合中的一个文档。其中每个元素都代表某个词在某个文档中出现的次数。
+
+一般来说，term-document matrix有|V|行D列。
+
+#### 6.3.2 Words as vectors: document dimensions
+行维度可以用来判断哪些文档更相似。
+
+#### 6.3.3 Words as vectors: word dimensions
+除了term-document matrix外还可以用term-term matrix来表示word向量，term-term matrix也称word-word matrix或term-context matrix，它是word和word间关系的矩阵，因此尺寸为$|V|\times |V|$，每个元素代表当前词（行）和上下文词（列）共同出现在某些文本（训练数据）中的次数。
+
+### 6.4 Cosine for measuring similarity
