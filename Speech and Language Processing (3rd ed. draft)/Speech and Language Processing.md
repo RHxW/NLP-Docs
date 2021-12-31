@@ -369,3 +369,106 @@ term-document matrix里每一行代表vocabulary中的一个word，每一列代�
 除了term-document matrix外还可以用term-term matrix来表示word向量，term-term matrix也称word-word matrix或term-context matrix，它是word和word间关系的矩阵，因此尺寸为$|V|\times |V|$，每个元素代表当前词（行）和上下文词（列）共同出现在某些文本（训练数据）中的次数。
 
 ### 6.4 Cosine for measuring similarity
+余弦相似度
+
+### 6.5 TF-IDF:Weighing terms in the vector
+前面提到的co-occurrence matrices，无论是words与文档间关系还是words与其他words间关系，反映的都是频率信息。但是原始频率并不是words间关系的最好度量方式。原始频率的偏见很强而且判别能力较差。如果我们想知道什么样的上下文能够被cherry和strawberry共享但是不被digital和information共享的话，很显然the，it，they这样的词无法提供好的判别能力，因为他们在各种words的上下文中出现的太频繁而且无法提供关于某个词的有用信息。
+
+有点悖论的意思了嗷！频繁出现的词要比只出现一两次的词重要性更高，但是出现太频繁的词却并不重要比如随处可见的the或者good等。该如何平衡这两个相互矛盾的限制呢？
+
+关于这一问题一般有两种解决办法：tf-idf权重法（通常用于维度为文档的时候）和PPMI算法（通常用于维度为words的情况）
+
+tf-idf算法是两项的积，分别关于：
+1. term frequency：word t在文档d中的频率。可以将原始频数作为term frequency：
+   $$
+   tf_{t,d}=count(t,d)
+   $$
+   一般用$\log_{10}$对原始频率进行一定的压缩，考虑在某一文档中出现100次的词并不应该使它和文档的相关性提高100倍：
+   $$
+   tf_{t,d}=\log_{10}(count(t,d)+1)
+   $$
+2. 第二项会针对仅在几个文档中出现的词更高的权重。仅出现于某几个文档的词对于区分这些文档更有用；在所有文档中都出现的词反而用处不大。文档关于一个词t的频率$df_t$代表这个词出现的文档个数，称为document frequency，它和collection frequency不一样，后者是全部文档中某个词出现的总次数，前者是文档个数。
+
+通过inverse document frequency或者idf项权重来强调具有判别能力的词。idf定义为$N/df_t$其中N代表collection中总的文档个数，$df_t$是词t出现的文档个数。因此某个词出现的文档数越少，它的权重就越高。
+
+有的时候corpus没有合适的文档划分，那么就需要手动进行划分然后计算idf
+
+因为数值通常很大，因此idf也计算log值：
+$$
+idf_t=\log_{10}(\frac{N}{df_t})
+$$
+
+### 6.6 Pointwise Mutual Information(PMI)
+另一种用于term-term matrices的权重函数是PPMI(positive pointwise mutual information).PPMI指出衡量两个词间关系的最好方式是
+
+PMI可以算是NLP领域中最重要的概念之一。它衡量了两个项目x和y共同出现的频率与假设它们相互独立时同时出现的期望：
+$$
+I(x,y)=\log_2\frac{P(x,y)}{P(x)P(y)}
+$$
+则目标词w和上下文词c间的PMI为：
+$$
+PMI(w,c)=\log_2\frac{P(w,c)}{P(w)P(c)}
+$$
+分子代表这两个词被同时观测到的频率。分母代表在相互独立的假设下二者同时出现的概率。
+PMI在衡量两个词间关系中很有用。
+PMI会出现负值，负值对我们没什么用，所以一般用Positive PMI，将全部负值clip到0:
+$$
+PPMI(w,c)=\max(\log_2\frac{P(w,c)}{P(w)P(c)},0)
+$$
+在遇到很罕见词的时候PMI会出现较明显偏置，罕见词的PMI值会非常高。一种解决办法是修改其上下文词概率P(c)的计算方法，修改为频数求$\alpha$次方的$P_{\alpha}(c)$：
+$$
+PPMI_{\alpha}(w,c)=\max(\log_2\frac{P(w,c)}{P(w)P_{\alpha}(c)},0) \\
+P_{\alpha}(c)=\frac{count(c)^{\alpha}}{\sum_c count(c)^{\alpha}}
+$$
+$\alpha$的经验值一般取0.75
+
+### 6.7 Applications of the tf-idf or PPMI vector models
+总之，到目前为止介绍的向量语意模型是将一个词映射到一个高维语义空间的方法。
+通过计算两个词的tf-idf或PPMI向量的余弦相似度来判断二者是否相似。这种向量通常都是稀疏的
+
+tf-idf模型一般用于判断两个文档是否相似。
+
+### 6.8 Word2vec
+接下来介绍一个更强的word表示：embeddings，它是更短更稠密的向量。
+从现实角度来看，稠密向量在几乎任何任务中的表现都优于稀疏向量。其中的原因我们目前并不清楚，但是直觉理解，更短更稠密的向量要求分类器的参数量更少，因此泛化能力更强。
+
+本节介绍一种计算embeddings的方法：skip-gram with negative sampling，又称SGNS，它是word2vec这个软件中的两个算法之一，因此有时也不严谨地称为word2vec算法。Word2vec的特征是静态特征，也就是说任何词的embedding都是固定不变的；例如BERT类算法的表示就是动态的，一个词对于不同上下文的特征是不同的。
+
+word2vec的思想是训练一个二分类的分类器用来判断一个词w是否出现在上下文c周围，然后用分类器的权重作为词的embedding（和图像中的识别任务一样）。巧妙的是，这是一个自监督任务，不需要标注。
+
+#### 6.8.1 The classifier
+skip-gram训练一个分类器，对于一个测试目标词w和上下文窗口长度L包含的上下文词$c_{1:L}$，分类器会根据上下文窗口与目标词的相似度进行概率预测。因此模型需要保存|V|个词的2|V|个特征，其中有一半是作为目标词的矩阵，另一半是作为上下文和噪声词的矩阵。也就是说skip-gram实际为每个词保存了两个特征embeddings，一个作为目标，一个作为上下文。
+
+#### 6.8.2 Learning skip-gram embeddings
+训练的时候，正样本就是窗口内的上下文词，然后随机采样k个负样本（实际上是按权重采样负样本）。
+
+在训练的时候模型会保存两个矩阵，一个是目标矩阵W一个是上下文矩阵C，实际用的时候可以只用目标矩阵W的权重
+
+#### 6.8.3 Other kinds of static embeddings
+fasttext是一个word2vec的扩展，它解决了未知词的问题，方法是将单词拆开到字母级别的n-gram表示。
+
+另一个应用广泛的静态embedding 模型是GloVe(Global Vectors)，该模型捕捉全局统计信息。
+
+实际上例如word2vec这种稠密向量与稀疏向量间存在很严格的数学关系，因此word2vec可以视为PPMI矩阵的隐式优化。
+
+### 6.9 Visualizing Embeddings
+特征可视化方法，例如聚类或者t-SNE等
+
+### 6.10 Semantic properties of embeddings
+介绍embeddings的一些语义性质。
+**Different types of similarity or association:** 无论稀疏向量还是稠密向量模型都涉及的一个参数是上下文窗口的长度。一般设定为每侧1-10个词（也就是总共上下文为2-20个词）。
+
+具体的选择依赖于表示的目的。短一些的上下文窗口得到的表示更倾向于关注于句法(syntactic)，因为信息的来源非常近。当使用较短的上下文窗口来计算向量的时候，对于目标词w的最相近词更有可能来源于文本同一部分的语法上类似的词。而较长的上下文窗口会使相似的概念转变为话题相关。
+
+例如对于哈利波特中的Hogwarts这个词，如果用$\pm 2$的窗口，则相近词是其他作品中的虚构的学校名称。但是如果用$\pm 5$的窗口，与之相关的就是哈利波特中的其他名次如Dumbledore, Malfoy和half-blood等。
+
+对这两种不同的相似类型进行区分很有必要。如果两个词通常比较靠近，则称他们有first-order co-occurrence（有时也称syntagmatic association），比如wrote与book或者poem有一阶关联关系。如果两个词有相似的邻居，则称他们有second-order co-occurrence（有时也称paradigmatic association），因此wrote与例如said或remarked等词有二阶关联关系。
+
+**Analogy/Relational Similarity:** embeddings的另一个语义性质是他们有捕捉关联含义的能力。
+
+向量的平行四边形关系
+
+#### 6.10.1 Embeddings and Historical Semantics
+对于不同的历史时期，词的含义有可能不同，可以在不同的embedding空间中对其进行分析。
+
+### 6.11 Bias and Embeddings
