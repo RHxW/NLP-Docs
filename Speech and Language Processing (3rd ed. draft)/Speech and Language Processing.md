@@ -1,4 +1,6 @@
 https://web.stanford.edu/~jurafsky/slp3/
+# Speech and Language Proccessing
+[toc]
 
 ## 1 Introduction
 
@@ -472,3 +474,76 @@ fasttext是一个word2vec的扩展，它解决了未知词的问题，方法是�
 对于不同的历史时期，词的含义有可能不同，可以在不同的embedding空间中对其进行分析。
 
 ### 6.11 Bias and Embeddings
+归纳偏置
+
+虽然embeddings拥有从文本中学习词语含义的能力，但是也会产生隐含于文本里的隐式的偏置和刻板印象。这种刻板印象会导致一个称为allocational harm的结果，意思是系统将资源进行不公平的分配。
+
+### 6.12 Evaluating Vector Models
+向量模型最重要的评价方式是进行外部任务评价（放在实际场景下）。但是最常用的评价方法是计算相似度。
+
+
+## 7 Neural Networks and Neural Language Models
+
+### 7.1 Units
+神经元
+$$
+z=b+\sum_iw_ix_i
+$$
+
+### 7.2 The XOR problem
+
+### 7.3 Feedforward Neural Networks
+
+### 7.4 Feedforward networks for NLP: Classification
+分类任务
+
+### 7.5 Feedforward Neural Language Modeling
+language modeling：根据前面的文本预测接下来出现的词
+
+和n-gram模型相比，neural language models可以处理更长的历史、在相似词的文本上的泛化能力更强并且预测的精度更高。
+和n-gram类似也用N个词来近似：
+$$
+P(w_t|w_1,...,w_{t-1})\approx P(w_t|w_{t-N+1},...,w_{t-1})
+$$
+
+#### 7.5.1 Forward inference in the neural language model
+
+### 7.6 Training Neural Nets
+
+#### 7.6.1 Loss function
+通常使用的loss函数是交叉熵loss，其一般形式为：
+$$
+L_{CE}(\hat{y},y)=-\sum_{k=1}^Ky_k\log \hat{y}_k
+$$
+在交叉熵函数前要用softmax把输入归一化成概率向量
+
+#### 7.6.2 Computing the Gradient
+
+
+## 8 Sequence Labeling for Parts of Speech and Named Entities
+命名实体(named entity)可以理解成专有名词。
+
+词性(POS, parts of speech)和命名实体是理解语句结构和含义的很有用的线索。知道一个词是名词还是动词可以告诉我们它相邻词可能是什么，以及语法结构是什么。
+
+sequence labeling任务指为输入序列的每个词打一个标签，经典的sequence labeling算法有隐马尔可夫模型(HMM, Hidden Markov Model)和条件随机场(CRF, Conditional Random Field)，前者是生成式后者是判别式。
+
+### 8.1 (Mostly) English Word Classes
+词性可以分为两大类：封闭词类和开放词类。封闭词类指那些组成固定的词类，例如介词，助动词等。而名次动词等都属于开放词类。封闭词类一般是一些功能性词类，通常较短，在文本中出现频繁并且在语法中有结构性功能。
+
+### 8.2 Part-of-Speech Tagging
+Part-of-Speech Tagging是一个消除歧义的任务，一个词可能有多个词性，而tagging的目的是找到当前场景下的正确词性。比如book，有动词和名词两种词性。而POS-tagging的目的就是消除歧义。
+
+POS-tagging算法的精度非常高，基本都在97%以上。
+
+大多数词（85-86%）都是不存在歧义的，但是存在歧义的那一小部分（14-15%）却很常见，连续文本中大概55-67%的词token是有歧义的。
+
+### 8.3 Named Entities and Named Entity Tagging
+一般可以将命名实体分为四类：
+* People(PER)
+* Organization(ORG)
+* Location(LOC)
+* Geo-Political Enitity(GPE)
+
+对很多自然语言处理任务，named entity tagging都是很有用的第一步。
+
+和POS-tagging每个词只有一个词性的特点不同，NER存在分割问题，也就是一个实体可能跨越不止一个词，所以需要确定哪些是entities哪些不是，而且需要确定entities的边界位置。另一个问题是类型的歧义，比如JFK可以代表一个人也可以代表一个机场或者学校、桥梁、街道等。
