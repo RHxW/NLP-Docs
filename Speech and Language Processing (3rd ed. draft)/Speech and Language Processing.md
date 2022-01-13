@@ -932,3 +932,57 @@ $$
 实现上，每个head有自己的一套KQV矩阵，而且K和Q矩阵的维度是$d_k$, V的维度是$d_v$, 而非与模型维度相同. 因此对每个head i，这三个矩阵的维度为$W^Q_i\in\mathbb{R}^{d\times d_k}, W^K_i\in\mathbb{R}^{d\times d_k}, W^V_i\in\mathbb{R}^{d\times d_v}$. 假设有h个head，那么最后会得到h个尺寸为$N\times d_v$的特征向量矩。然后需要把他们合并起来并且降到原始输入维度d，通过一个线性映射实现$W^O\in\mathbb{R}^{hd_v\times d}$. 将Figure 9.18中的单层自注意力层替换为多头自注意力层，其他部分不变。
 
 #### 9.7.3 Modeling word order: positional embeddings
+transformer如何对输入序列中每个token的位置进行建模？在RNN中这种信息是内建于模型内部的，但是transformer并没有这种结构。所以需要显示地指定token的位置信息，也就是需要位置编码(positional encoding). 由于位置编码需要满足几个条件：值域固定，能够体现不同相对位置差异。因此采用了原论文中的方案，用周期函数作为位置编码函数。
+
+### 9.8 Transformers as Language Models
+训练的时候，给定所有前序词，transformer的最后层会得到一个概率分布，再用交叉熵计算loss
+
+### 9.9 Contextual Generation and Summarization
+文本摘要(text summarization)是文本自回归生成的一个实际应用。
+
+一个简单又高效的解决办法是把每段文本的摘要接在它后面然后让模型执行一个生成任务。假设文章序列$(x_1,...,x_m)$和摘要序列$(y_1,...,y_n)$成对出现，在训练的时候，将二者合并成一个训练样本$(x_1,...,x_m,\delta,y_1,...,y_n)$，则这个样本长度为m+n+1. 然后用这些数据训练一个自回归模型用来实现摘要提取。
+
+
+## 10 Machine Translation and Encoder-Decoder Models
+本章介绍机器翻译(MT, machine translation)任务。
+
+机器翻译的标准算法是encoder-decoder network，也称为sequence to sequence network, 这种网络可以用RNN或者transformer实现。
+
+之前接触的任务有分类和序列标注，具体来说是将一个序列进行分类或者对序列中每个token进行分类。
+
+而encoder-decoder或者seq2seq模型则用于不同的序列建模任务，它输出的序列是一个复杂的函数，需要将输入序列映射到一些不严格直接对应的标签。
+
+机器翻译就是这样的任务，目标语言和源语言的词之间并不一定有严格的对应关系，句子中元素的位置也可能不同。例如在英语中，动词一般在句子中间位置，而日语中的动词则位于句子的末尾；而且日语不需要代词，但是英语需要。
+
+### 10.1 Language Divergences and Typology
+大多数语言都有一些相通的地方，例如每种语言都有指代人物的词，有关于吃喝的词，还有礼貌和不礼貌的说法。不同语言在语法结构上也有相通的地方，例如大家都有名词和动词，有疑问句式或祈使句式，都有指代同意或不同意的语言机制。
+
+但是语言间同样存在很多差异，正是这些差异引起了翻译差异，它们同样也会用来帮助构建更好的翻译模型。对于这些跨语言的系统上的共通和差异的研究称为语言类型学(liguistic typology).
+
+#### 10.1.1 Word Order Typology
+不同语言的词序不同，德语、法语、英语和普通话都是
+SVO(Subject-Verb-Object)语言，而印地语和日语则是SOV(Subject-Object-Verb)语言。有相同语序的语言一般还有其他类似的地方，例如VO语言一般都有介词(prepositions)，而OV语言一般都有后置词(postpositions).
+
+除此之外不同语言还在其他地方存在词序不一致的情况。
+
+#### 10.1.2 Lexical Divergences
+不同语言还存在词义上的差异。
+
+#### 10.1.3 Morphological Typology
+语言的变化一般沿两个维度进行描述，第一个是每个词的变体的数量，第二个是哪些变体可分割
+
+#### 10.1.4 Referential density
+
+
+### 10.2 The Encoder-Decoder Model
+Encoder-decoder网络，或称sequence-to-sequence网络，可以生成语义上合理的不定长的输出序列。
+
+这种网络的核心思想是用一个encoder网络接受一个输入序列并生成一个上下文表达，通常称为context，然后用decoder对这个context进行解码生成针对不同任务特定的输出序列。
+
+它由三部分组成：
+1. encoder
+2. context vector
+3. decoder
+
+### 10.3 Encoder-Decoder with RNNs
+    
