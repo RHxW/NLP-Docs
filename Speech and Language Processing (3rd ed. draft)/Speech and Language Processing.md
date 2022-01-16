@@ -1001,3 +1001,35 @@ p(y|x)=p(y_1|x)p(y_2|y_1,x)p(y_3|y_1,y_2,x)...p
 (y_m|y_1,...,y_{m-1},x)
 $$
 
+使用RNN的encoder-decoder如Figure 10.5 所示。
+![Figure 10.5](Figs/10.5.png 'Figure 10.5')
+
+encoder的目的是要生成输入的一个语境化的表达c。这个表达c被包含在encoder的最后隐含层$h_n^e$中，然后会传给decoder
+
+decoder使用这个隐含状态来初始化decoder的第一个隐含状态，然后依次生成后面的输出。这种方法有一个问题就是c会随着输出的生成而衰减。一种解决办法是在decoder的每一步都输入c来计算对应时刻的隐含状态。
+
+#### 10.3.1 Training the Encoder-Decoder Model
+training时的loss是针对每个词的，而且会采用teacher forcing策略，也就是前序输入不采用预测值而采用gt值。
+
+### 10.4 Attention
+encoder-decoder这种bottleneck形式使encoder生成的最终层表示必须能够完整描述输入数据，因为decoder完全依赖于这个表示，但是很显然这不太现实。
+
+针对bottleneck的一种解决方案是注意力机制，它对encoder的所有隐含状态进行加权得到最终的隐含状态。
+
+### 10.5 Beam Search
+选概率最高的选项的算法称为贪心搜素算法，这种算法的问题是它一次只能关注一种可能，有可能错过最佳序列。Beam search相当于一次关注多个可能的贪心搜索。
+
+### 10.6 Encoder-Decoder with Transformers
+除了使用RNN/LSTM之外，还可以用transformer来构建encoder-decoder网络，如Figure 10.15所示。
+![Figure 10.15](Figs/10.15.png 'Figure 10.15')
+
+为了处理源语言，在decoder的transfomer blocks中加入一个额外的交叉注意力层。交叉注意力的形式和一般transformer中的多头自注意力的形式一样，只不过它的queries一般来自于decoder中前序层，而keys和values则来自于encoder的输出。也就是说encoder的最终输出$H^{enc}=h_1,...,h_t$乘交叉注意力层的key权重$W^K$和value权重$W^V$，前一个decoder层的输出$H^{dec[i-1]}$乘交叉注意力层的query权重$W^Q$:
+$$
+Q=W^QH^{dec[i-1]}; \quad K=W^KH^{enc}; \quad V=W^VH^{enc} \\
+CrossAttention(Q,K,V)=\text{softmax}(\frac{QK^T}{\sqrt{d_k}})V
+$$
+
+交叉注意力使decoder关注源语言的每个词。
+
+训练的时候和RNN的encoder-decoder架构一样。
+
